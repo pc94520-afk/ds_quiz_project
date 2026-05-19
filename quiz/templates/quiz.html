@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>資料結構主題測驗網站</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 40px; background-color: #f9f9f9;">
+    <form method="post" style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+        {% csrf_token %}
+        <h2 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px;">資料結構主題測驗</h2>
+        {% for q in questions %}
+            <div style="margin-bottom: 25px;">
+                <p style="font-weight: bold; font-size: 16px; white-space: pre-wrap; font-family: monospace;">{{ forloop.counter }}. {{ q.content }}</p>
+                {% for opt in q.options.all %}
+                    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
+                        <input type="radio" name="q_{{ q.id }}" value="{{ opt.id }}" required style="margin-right: 10px;"> 
+                        {{ opt.text }}
+                    </label>
+                {% endfor %}
+            </div>
+            <hr style="border: 0; border-top: 1px solid #eee;">
+        {% endfor %}
+        <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; width: 100%; cursor: pointer;">交卷結算分數</button>
+    </form>
+</body>
+</html>

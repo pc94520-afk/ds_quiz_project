@@ -4,22 +4,257 @@
     <title>資料結構主題測驗網站</title>
 </head>
 <body style="font-family: Arial, sans-serif; margin: 40px; background-color: #f9f9f9;">
-    <form method="post" style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+    
+    <div id="setup-area" style="max-width: 600px; margin: 80px auto 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;">
+        <h2 style="color: #333; margin-bottom: 20px;">📋 設定您的資料結構測驗</h2>
+        <p id="review-tip" style="color: #ff9800; font-weight: bold; display: none; margin-bottom: 20px; font-size: 16px;">💡 系統偵測到您的錯題本中有未解決的魔王題！</p>
+        <p style="color: #666; margin-bottom: 30px; font-size: 16px;">請選擇本次想要挑戰的模式：</p>
+        
+        <div style="margin-bottom: 20px;">
+            <button type="button" onclick="startQuiz(5)" style="background-color: #007bff; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 5px; cursor: pointer; margin-right: 20px; font-weight: bold;">一般挑戰 5 題</button>
+            <button type="button" onclick="startQuiz(10)" style="background-color: #007bff; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 5px; cursor: pointer; font-weight: bold;">一般挑戰 10 題</button>
+        </div>
+
+        <div id="wrong-mode-zone" style="display: none; border-top: 1px dashed #ccc; padding-top: 25px; margin-top: 25px;">
+            <button type="button" onclick="startWrongQuestionsMode()" style="background-color: #dc3545; color: white; border: none; padding: 15px 40px; font-size: 18px; border-radius: 5px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(220, 53, 69, 0.3);">
+                🔥 進入錯題複習模式 (<span id="wrong-count-txt">0</span> 題)
+            </button>
+        </div>
+    </div>
+
+    <form method="post" id="quizForm" style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none;">
         {% csrf_token %}
-        <h2 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px;">資料結構主題測驗</h2>
-        {% for q in questions %}
-            <div style="margin-bottom: 25px;">
-                <p style="font-weight: bold; font-size: 16px; white-space: pre-wrap; font-family: monospace;">{{ forloop.counter }}. {{ q.content }}</p>
-                {% for opt in q.options.all %}
-                    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-                        <input type="radio" name="q_{{ q.id }}" value="{{ opt.id }}" required style="margin-right: 10px;"> 
-                        {{ opt.text }}
-                    </label>
-                {% endfor %}
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 25px;">
+            <h2 style="color: #333; margin: 0; font-size: 20px;">
+                <span id="quiz-title-mode">資料結構主題測驗</span> (<span id="current-index-txt">1</span> / <span id="total-count-txt">10</span>)
+            </h2>
+            <div id="timer-box" style="background-color: #ffeb3b; color: #c62828; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 18px; border: 2px solid #c62828;">
+                ⏱️ <span id="countdown-num">30</span> 秒
             </div>
-            <hr style="border: 0; border-top: 1px solid #eee;">
+        </div>
+        
+        {% for q in questions %}
+            <div class="question-container-box" id="q_box_index_{{ forloop.counter0 }}" data-qid="{{ q.id }}" style="display: none; margin-bottom: 25px;">
+                
+                <p style="font-weight: bold; font-size: 16px; white-space: pre-wrap; font-family: monospace; color: #333; background-color: #f0f4f8; padding: 15px; border-radius: 4px; border-left: 5px solid #007bff;">
+                    {% if q.text %}
+                        {{ q.text }}
+                    {% elif q.question %}
+                        {{ q.question }}
+                    {% elif q.content %}
+                        {{ q.content }}
+                    {% else %}
+                        {{ q }}
+                    {% endif %}
+                </p>
+                
+                <div class="js-options-list">
+                    {% for opt in q.options.all %}
+                        <label class="js-single-option" style="display: block; margin-bottom: 12px; cursor: pointer; padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px;">
+                            <input type="radio" name="q_{{ q.id }}" value="{{ opt.id }}" style="margin-right: 8px;" data-correct="{% if opt.is_correct %}true{% else %}false{% endif %}" data-text="{{ opt.text }}">
+                            <span class="js-prefix-letter" style="font-weight: bold; color: #007bff;"></span> 
+                            <span class="js-option-pure-text">{{ opt.text }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="js-feedback-zone" style="display: none; margin-top: 15px; padding: 12px; border-radius: 4px; font-weight: bold; border-left: 5px solid;">
+                    <span class="js-status-txt"></span><br>
+                    <span class="js-correct-ans-txt" style="color: #2e7d32; display: block; margin-top: 5px;"></span>
+                </div>
+                <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;">
+            </div>
         {% endfor %}
-        <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; width: 100%; cursor: pointer;">交卷結算分數</button>
+        
+        <button type="button" id="check-btn" onclick="checkCurrentAnswer(false)" style="background-color: #28a745; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 4px; cursor: pointer; display: block; width: 100%; font-weight: bold; margin-top: 20px;">
+            確認答案
+        </button>
+        
+        <button type="button" id="next-btn" onclick="goNext()" style="background-color: #007bff; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 4px; cursor: pointer; display: none; width: 100%; font-weight: bold; margin-top: 20px;">
+            下一題 ➔
+        </button>
+
+        <button type="button" id="submit-btn" onclick="submitQuiz()" style="background-color: #dc3545; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 4px; cursor: pointer; display: none; width: 100%; font-weight: bold; margin-top: 20px;">
+            🎉 結束測驗並查看分數
+        </button>
     </form>
+
+    <script>
+        let rawBoxes = Array.from(document.querySelectorAll('.question-container-box'));
+        let finalQuizQueue = [];
+        let currentIndex = 0;
+        let timerInterval = null;
+        let timeLeft = 30;
+        let wrongQuestions = JSON.parse(localStorage.getItem('real_wrong_notebook') || '[]');
+        let availableWrongBoxes = rawBoxes.filter(box => wrongQuestions.includes(box.dataset.qid));
+
+        const LETTERS = ['(A)', '(B)', '(C)', '(D)', '(E)', '(F)'];
+
+        // 🌟 核心修正：進網頁時清洗原本帶有舊字母的內容，並全面打散
+        rawBoxes.forEach(box => {
+            let optionsList = box.querySelector('.js-options-list');
+            if (optionsList) {
+                let options = Array.from(optionsList.querySelectorAll('.js-single-option'));
+                
+                options.forEach(opt => {
+                    let textSpan = opt.querySelector('.js-option-pure-text');
+                    let currentTxt = textSpan.innerText.trim();
+                    // 用正則表達式把原本字串開頭的 (A), (B), A., B. 或是括號全部抹乾淨
+                    let cleanedTxt = currentTxt.replace(/^[\s\(]*[A-F_a-f][\.\)\s、\s-]*/g, '');
+                    textSpan.innerText = cleanedTxt;
+                    
+                    // 同步把 input 乾淨的 data-text 備份更新，回饋解析時才好看
+                    let inputObj = opt.querySelector('input[type="radio"]');
+                    inputObj.dataset.text = cleanedTxt;
+                });
+
+                // 執行隨機洗牌
+                options.sort(() => Math.random() - 0.5);
+                
+                // 重新塞回並賦予它由上到下全新的 (A) (B) (C) (D) 順序標籤
+                options.forEach((opt, idx) => {
+                    let prefixSpan = opt.querySelector('.js-prefix-letter');
+                    prefixSpan.innerText = LETTERS[idx] ? LETTERS[idx] + " " : "";
+                    
+                    // 再把這顆 radio 的顯示文字多塞入目前的新 A B C D 英文字首
+                    let inputObj = opt.querySelector('input[type="radio"]');
+                    inputObj.dataset.text = (LETTERS[idx] || "") + " " + inputObj.dataset.text;
+                    
+                    optionsList.appendChild(opt);
+                });
+            }
+        });
+
+        if (availableWrongBoxes.length > 0) {
+            document.getElementById('review-tip').style.display = 'block';
+            document.getElementById('wrong-mode-zone').style.display = 'block';
+            document.getElementById('wrong-count-txt').innerText = availableWrongBoxes.length;
+        }
+
+        function startQuiz(numQuestions) {
+            document.getElementById('quiz-title-mode').innerText = "一般挑戰模式";
+            let allShuffled = [...rawBoxes];
+            allShuffled.sort(() => Math.random() - 0.5);
+            finalQuizQueue = allShuffled.slice(0, numQuestions);
+            enterQuizLayout();
+        }
+
+        function startWrongQuestionsMode() {
+            document.getElementById('quiz-title-mode').innerText = "🔥 錯題複習模式";
+            let shuffledWrong = [...availableWrongBoxes];
+            shuffledWrong.sort(() => Math.random() - 0.5);
+            finalQuizQueue = shuffledWrong;
+            enterQuizLayout();
+        }
+
+        function enterQuizLayout() {
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('quizForm').style.display = 'block';
+            document.getElementById('total-count-txt').innerText = finalQuizQueue.length;
+            showQuestion(0);
+        }
+
+        function showQuestion(index) {
+            rawBoxes.forEach(b => b.style.display = 'none');
+            finalQuizQueue[index].style.display = 'block';
+            document.getElementById('current-index-txt').innerText = index + 1;
+            document.getElementById('check-btn').style.display = 'block';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('submit-btn').style.display = 'none';
+            resetAndStartTimer();
+        }
+
+        function resetAndStartTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 30;
+            let timerDisplay = document.getElementById('countdown-num');
+            let timerBox = document.getElementById('timer-box');
+            timerDisplay.innerText = timeLeft;
+            timerBox.style.backgroundColor = '#ffeb3b';
+            timerBox.style.color = '#c62828';
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.innerText = timeLeft;
+                if (timeLeft <= 5) {
+                    timerBox.style.backgroundColor = '#d32f2f';
+                    timerBox.style.color = '#ffffff';
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    checkCurrentAnswer(true);
+                }
+            }, 1000);
+        }
+
+        function checkCurrentAnswer(isTimeout = false) {
+            clearInterval(timerInterval);
+            let currentBlock = finalQuizQueue[currentIndex];
+            let checkedRadio = currentBlock.querySelector('input[type="radio"]:checked');
+            
+            if (!checkedRadio && !isTimeout) {
+                alert('請先選擇一個選項再確認喔！');
+                resetAndStartTimer();
+                return;
+            }
+            
+            let qid = currentBlock.dataset.qid;
+            let feedback = currentBlock.querySelector('.js-feedback-zone');
+            let statusSpan = feedback.querySelector('.js-status-txt');
+            let correctSpan = feedback.querySelector('.js-correct-ans-txt');
+            let correctRadio = currentBlock.querySelector('input[data-correct="true"]');
+            
+            correctSpan.innerText = "💡 正確答案是：" + correctRadio.dataset.text;
+
+            if (isTimeout) {
+                feedback.style.backgroundColor = '#fff3cd';
+                feedback.style.borderColor = '#ff9800';
+                statusSpan.style.color = '#b78103';
+                statusSpan.innerText = "⏰ 時間到！來不及作答，此題收錄進錯題本。";
+                if (!wrongQuestions.includes(qid)) { wrongQuestions.push(qid); }
+            } else {
+                let isCorrect = checkedRadio.dataset.correct === 'true';
+                if (isCorrect) {
+                    feedback.style.backgroundColor = '#e2f0d9';
+                    feedback.style.borderColor = '#385723';
+                    statusSpan.style.color = '#385723';
+                    statusSpan.innerText = "✅ 恭喜你，答對了！";
+                    wrongQuestions = wrongQuestions.filter(id => id !== qid);
+                } else {
+                    feedback.style.backgroundColor = '#fce4d6';
+                    feedback.style.borderColor = '#c62828';
+                    statusSpan.style.color = '#c62828';
+                    statusSpan.innerText = "❌ 糟糕，答錯了！此題已收錄進錯題本。";
+                    if (!wrongQuestions.includes(qid)) { wrongQuestions.push(qid); }
+                }
+            }
+            
+            localStorage.setItem('real_wrong_notebook', JSON.stringify(wrongQuestions));
+            feedback.style.display = 'block';
+            currentBlock.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = true);
+            document.getElementById('check-btn').style.display = 'none';
+            
+            if (currentIndex < finalQuizQueue.length - 1) {
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                document.getElementById('submit-btn').style.display = 'block';
+            }
+        }
+
+        function goNext() {
+            currentIndex++;
+            showQuestion(currentIndex);
+        }
+
+        function submitQuiz() {
+            clearInterval(timerInterval);
+            document.querySelectorAll('input[type="radio"]').forEach(r => {
+                r.disabled = false;
+                r.removeAttribute('required');
+            });
+            document.getElementById('quizForm').submit();
+        }
+    </script>
 </body>
 </html>
